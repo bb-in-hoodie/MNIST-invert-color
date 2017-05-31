@@ -7,48 +7,62 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 import time
 
-# ver 0.3
-# discriminator : fully connected layers (784 -> 256 -> 128 -> 1)
-# generator : MaxPool2D + fully connected layers (196 -> 256 -> 512 -> 784)
+# ver 0.4
+# discriminator : convolutional layers :
+#	(1*28*28 -> 16*14*14 -> 32*7*7 -> 1)
+# generator : convolutional layers & deconvolutional layers :
+#	(1*28*28 -> 16*14*14 -> 16*14*14 -> 1*28*28)
 # loss_dis : mean squared
 # loss_gen : mean squared
 # loss_cc : mean squared
 # batch size : 100 (50 for black, 50 for white)
 # epoch size : 300
 
-def MaxPool2D(x, size):
-	if(x.size() != size):
-		x = x.view(size) # 1D -> 2D
-	x = F.max_pool2d(x, 2) # ?, 14, 14
-	out = x.view(x.size(0), -1) # ?, 196
-	return out
-
 class Discriminator(nn.Module):
 	def __init__(self):
 		super(Discriminator, self).__init__()
-		self.fc1 = nn.Linear(784, 256)
-		self.fc2 = nn.Linear(256, 128)
-		self.fc3 = nn.Linear(128, 1)
+		self.layer1 = nn.Sequential(
+			nn.Conv2d(1, 16, stride=2, kernel_size=4, padding=1), # 28*28 -> 14*14
+			nn.BatchNorm2d(16),
+			nn.LeakyReLU()
+		)
+		self.layer2 = nn.Sequential(
+		    nn.Conv2d(16, 32, stride=2, kernel_size=4, padding=1), # 14*14 -> 7*7
+		    nn.BatchNorm2d(32),
+		    nn.LeakyReLU()
+		)
+		self.fc = nn.Linear(7*7*32, 1)
 
 	def forward(self, x):
-		relu1 = F.relu(self.fc1(x))
-		relu2 = F.relu(self.fc2(relu1))
-		out = F.sigmoid(self.fc3(relu2))
+		out = self.layer1(x)
+		out = self.layer2(out)
+		out = out.view(out.size(0), -1)
+		out = self.fc(out)
 		return out
 
 class Generator(nn.Module):
 	def __init__(self):
 		super(Generator, self).__init__()
-		self.fc1 = nn.Linear(196, 256)
-		self.fc2 = nn.Linear(256, 512)
-		self.fc3 = nn.Linear(512, 784)
+		self.layer1 = nn.Sequential(
+		    nn.Conv2d(1, 16, stride=2, kernel_size=4, padding=1), # 28*28 -> 14*14
+		    nn.BatchNorm2d(16),
+		    nn.LeakyReLU()
+		)
+		self.layer2 = nn.Sequential(
+		    nn.Conv2d(16, 16, stride=1, kernel_size=3, padding=1), # 14*14 -> 14*14
+		    nn.BatchNorm2d(16),
+		    nn.LeakyReLU()
+		)
+		self.layer3 = nn.Sequential(
+		    nn.ConvTranspose2d(16, 1, stride=2, kernel_size=4, padding=1), # 14*14 -> 28*28
+		    nn.Tanh()
+		)
 
 	def forward(self, x):
-		relu1 = F.relu(self.fc1(x))
-		relu2 = F.relu(self.fc2(relu1))
-		out = F.tanh(self.fc3(relu2))
+		out = self.layer1(x)
+		out = self.layer2(out)
+		out = self.layer3(out)
 		return out
-
 
 transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))])
 dset = torchvision.datasets.MNIST(root = '/home/blackbindy/Documents/PytorchProjects/data/MNIST', transform = transforms, download = True)
@@ -85,7 +99,6 @@ print (dis_w)
 print (gen_w)
 print ()
 
-
 for epoch in range(300):
 	for i, batch in enumerate(dloader, 0):
 		images = batch[0] # 100, 28, 28
@@ -95,16 +108,9 @@ for epoch in range(300):
 		raw_imgs_b = images[0:div_num]
 		raw_imgs_w = images[div_num:images.size(0)] * -1 # Invert all the numbers
 
-		imgs_b = Variable(raw_imgs_b.view(raw_imgs_b.size(0), -1))
-		imgs_w = Variable(raw_imgs_w.view(raw_imgs_w.size(0), -1))
-		'''
-		print("<")
-		print(imgs_b[0][400:420])
-		print(imgs_w[0][400:420])
-		print((MaxPool2D(imgs_b, raw_imgs_b.size()))[0][100:120])
-		print((MaxPool2D(imgs_w, raw_imgs_w.size()))[0][100:120])
-		print(">")
-		'''
+		imgs_b = Variable(raw_imgs_b)
+		imgs_w = Variable(raw_imgs_w)
+
 		num_b = imgs_b.size(0)
 		num_w = imgs_w.size(0)
 
@@ -117,7 +123,6 @@ for epoch in range(300):
 			imgs_w = imgs_w.cuda()
 			ones_b = ones_b.cuda()
 			ones_w = ones_w.cuda()
-
 
 		### Training discriminator
 		#1. real_loss_dis_b + real_loss_dis_w for real images
@@ -138,11 +143,11 @@ for epoch in range(300):
 		#2. fake_loss_dis_b + fake_loss_dis_w for fake images
 		ZeroGrad()
 
-		fake_imgs_b = gen_b(MaxPool2D(imgs_w, raw_imgs_w.size()))
+		fake_imgs_b = gen_b(imgs_w)
 		out_b = dis_b(fake_imgs_b)
 		fake_loss_dis_b = torch.mean(out_b**2) # num of zeros_w = num of fake_imgs_b = num of imgs_w
 
-		fake_imgs_w = gen_w(MaxPool2D(imgs_b, raw_imgs_b.size()))
+		fake_imgs_w = gen_w(imgs_b)
 		out_w = dis_w(fake_imgs_w)
 		fake_loss_dis_w = torch.mean(out_w**2) # num of zeros_b = num of fake_imgs_w = num of imgs_b
 
@@ -152,16 +157,15 @@ for epoch in range(300):
 		optim_dis_b.step()
 		optim_dis_w.step()
 
-
 		### Training generator
 		#1. loss_gen_w + loss_cc_b (black -> white -> black)
 		ZeroGrad()
 
-		fake_imgs_w = gen_w(MaxPool2D(imgs_b, raw_imgs_b.size()))
+		fake_imgs_w = gen_w(imgs_b)
 		out_w = dis_w(fake_imgs_w)
 		loss_gen_w = torch.mean((out_w - ones_b)**2)
 
-		recvd_imgs_b = gen_b(MaxPool2D(fake_imgs_w, raw_imgs_b.size())) # recvd : recovered
+		recvd_imgs_b = gen_b(fake_imgs_w) # recvd : recovered
 		loss_cc_b = torch.mean((imgs_b - recvd_imgs_b)**2)
 
 		loss_bwb = loss_gen_w + loss_cc_b
@@ -171,11 +175,11 @@ for epoch in range(300):
 		#2. loss_gen_b + loss_cc_w (white -> black -> white)
 		ZeroGrad()
 
-		fake_imgs_b = gen_b(MaxPool2D(imgs_w, raw_imgs_w.size()))
+		fake_imgs_b = gen_b(imgs_w)
 		out_b = dis_b(fake_imgs_b)
 		loss_gen_b = torch.mean((out_b - ones_w)**2)
 
-		recvd_imgs_w = gen_w(MaxPool2D(fake_imgs_b, raw_imgs_w.size())) # recvd : recovered
+		recvd_imgs_w = gen_w(fake_imgs_b) # recvd : recovered
 		loss_cc_w = torch.mean((imgs_w - recvd_imgs_w)**2)
 
 		loss_wbw = loss_gen_b + loss_cc_w
@@ -194,13 +198,13 @@ for epoch in range(300):
 				%(loss_cc_b.data[0], loss_cc_w.data[0]))
 
 	# Saving real images and fake images as png image files
-	torchvision.utils.save_image(raw_imgs_b, "./result/CycleGAN_MNIST_Invert/" + str(epoch) + "_BtoW_a.png")
-	torchvision.utils.save_image(raw_imgs_w, "./result/CycleGAN_MNIST_Invert/" + str(epoch) + "_WtoB_a.png")
+	torchvision.utils.save_image(raw_imgs_b, "./result/" + str(epoch) + "_BtoW_a.png")
+	torchvision.utils.save_image(raw_imgs_w, "./result/" + str(epoch) + "_WtoB_a.png")
 
 	fake_imgs_w = fake_imgs_w.view(fake_imgs_w.size(0), 1, 28, 28)
-	torchvision.utils.save_image(fake_imgs_w.data, "./result/CycleGAN_MNIST_Invert/" + str(epoch) + "_BtoW_b.png")
+	torchvision.utils.save_image(fake_imgs_w.data, "./result/" + str(epoch) + "_BtoW_b.png")
 	fake_imgs_b = fake_imgs_b.view(fake_imgs_b.size(0), 1, 28, 28)
-	torchvision.utils.save_image(fake_imgs_b.data, "./result/CycleGAN_MNIST_Invert/" + str(epoch) + "_WtoB_b.png")
+	torchvision.utils.save_image(fake_imgs_b.data, "./result/" + str(epoch) + "_WtoB_b.png")
 
 	# Printing the execution time
 	exec_time = time.time() - init_time
