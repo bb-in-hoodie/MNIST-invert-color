@@ -26,21 +26,16 @@ $ python CycleGAN_MNIST_Invert.py
 Iteration Number            |  Original Image            |  Generated Image
 :-------------------------:|:-------------------------:|:-------------------------:
 0            |  ![alt text](result/examples/0_BtoW_a.png)  |  ![alt text](result/examples/0_BtoW_b.png)
-:-------------------------:|:-------------------------:|:-------------------------:
 15            |  ![alt text](result/examples/15_BtoW_a.png)  |  ![alt text](result/examples/15_BtoW_b.png)
-:-------------------------:|:-------------------------:|:-------------------------:
 300            |  ![alt text](result/examples/300_BtoW_a.png)  |  ![alt text](result/examples/300_BtoW_b.png)
-:-------------------------:|:-------------------------:|:-------------
+
 
 #### 2) White Background -> Black Background
 Iteration Number            |  Original Image            |  Generated Image
 :-------------------------:|:-------------------------:|:-------------------------:
-0            |  ![alt text](result/examples/0_WtoB_a.png)  |  ![alt text](result/examples/0_WtoBW_b.png)
-:-------------------------:|:-------------------------:|:-------------------------:
+0            |  ![alt text](result/examples/0_WtoB_a.png)  |  ![alt text](result/examples/0_WtoB_b.png)
 15            |  ![alt text](result/examples/15_WtoB_a.png)  |  ![alt text](result/examples/15_WtoB_b.png)
-:-------------------------:|:-------------------------:|:-------------------------:
 300            |  ![alt text](result/examples/300_WtoB_a.png)  |  ![alt text](result/examples/300_WtoB_b.png)
-:-------------------------:|:-------------------------:|:-------------------------:
 
 
 
