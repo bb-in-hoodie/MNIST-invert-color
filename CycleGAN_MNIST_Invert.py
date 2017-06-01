@@ -16,7 +16,10 @@ import time
 # loss_gen : mean squared
 # loss_cc : mean squared
 # batch size : 100 (50 for black, 50 for white)
-# epoch size : 300
+# learning rate :
+learning_rate = 0.0002
+# iter num :
+iter_num = 300
 
 class Discriminator(nn.Module):
 	def __init__(self):
@@ -90,16 +93,16 @@ if(torch.cuda.is_available()):
 	dis_w = dis_w.cuda()
 	gen_w = gen_w.cuda()
 
-optim_dis_w = optim.Adam(dis_w.parameters(), lr=0.0001)
-optim_dis_b = optim.Adam(dis_b.parameters(), lr=0.0001)
-optim_gen_w = optim.Adam(gen_w.parameters(), lr=0.0001)
-optim_gen_b = optim.Adam(gen_b.parameters(), lr=0.0001)
+optim_dis_w = optim.Adam(dis_w.parameters(), lr=learning_rate)
+optim_dis_b = optim.Adam(dis_b.parameters(), lr=learning_rate)
+optim_gen_w = optim.Adam(gen_w.parameters(), lr=learning_rate)
+optim_gen_b = optim.Adam(gen_b.parameters(), lr=learning_rate)
 
 print (dis_w)
 print (gen_w)
 print ()
 
-for epoch in range(300):
+for epoch in range(iter_num):
 	for i, batch in enumerate(dloader, 0):
 		images = batch[0] # 100, 28, 28
 		div_num = int(images.size(0)/2)
