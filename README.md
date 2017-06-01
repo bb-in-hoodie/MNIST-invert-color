@@ -6,8 +6,8 @@ Inverting the color of MNIST images from black to white and white to black using
 
 ## Prerequites
 * [Python 3.6](https://www.continuum.io/downloads)
-* [PyTorch 0.1.12](http://pytorch.org/)(currently, PyTorch runs only on Linux and OSX)
-* The code has been written on Linux (Ubuntu) system 
+* [PyTorch 0.1.12](http://pytorch.org/) (PyTorch is currently available only on Linux and OSX)
+* The code has been written on Linux (ubuntu 16.04 LTS) system 
 
 <br>
 

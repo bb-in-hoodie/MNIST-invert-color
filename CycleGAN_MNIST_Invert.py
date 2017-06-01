@@ -68,7 +68,7 @@ class Generator(nn.Module):
 		return out
 
 transforms = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean = (0.5, 0.5, 0.5), std = (0.5, 0.5, 0.5))])
-dset = torchvision.datasets.MNIST(root = '/home/blackbindy/Documents/PytorchProjects/data/MNIST', transform = transforms, download = True)
+dset = torchvision.datasets.MNIST(root = './data', transform = transforms, download = True)
 dloader = torch.utils.data.DataLoader(dset, batch_size = 100, shuffle = True)
 
 # Initial time
